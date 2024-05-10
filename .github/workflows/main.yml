@@ -52,16 +52,44 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Determine subreddit based on day of the week and time
+        run: |
+          HOUR=$(date +%-H)
+          DAY_NUM=$(date +%u)
+          if [ "$HOUR" -eq "${{ env.REPORT_TIME_MORNING_UTC }}" ]; then
+            IFS=' ' read -r -a SUBREDDITS <<< "$SUBREDDITS_MORNING"
+          elif [ "$HOUR" -eq "${{ env.REPORT_TIME_EVENING_UTC }}" ]; then
+            IFS=' ' read -r -a SUBREDDITS <<< "$SUBREDDITS_EVENING"
+          else
+            SUBREDDITS=("Tokyo" "Tokyo" "Tokyo" "Tokyo" "Tokyo" "Tokyo" "Tokyo")
+          fi
+
+          echo ${SUBREDDITS[*]}
+          SUBREDDIT=${SUBREDDITS[$((DAY_NUM-1))]}
+          echo $SUBREDDIT
+          echo "SUBREDDIT=${SUBREDDIT}" >> $GITHUB_ENV
+        env:
+          REPORT_TIME_MORNING_UTC: ${{ vars.REPORT_TIME_MORNING_UTC }}
+          REPORT_TIME_EVENING_UTC: ${{ vars.REPORT_TIME_EVENING_UTC }}
+          SUBREDDITS_MORNING: ${{ vars.SUBREDDITS_MORNING }}
+          SUBREDDITS_EVENING: ${{ vars.SUBREDDITS_EVENING }}
+
       - name: Run script
         run: |
-          python main.py ""
+          echo $SUBREDDIT
+          echo $SUBREDDIT_TOPICS_NUMBER
+          python main.py $SUBREDDIT $SUBREDDIT_TOPICS_NUMBER
         env:
           BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
           COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
           AI_ENGINE: ${{ vars.AI_ENGINE }}
           AI_MODEL: ${{ vars.AI_MODEL }}
           BLUESKY_USERNAME: ${{ vars.BLUESKY_USERNAME }}
           SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL }}
+          SUBREDDIT_TOPICS_NUMBER: ${{ vars.SUBREDDIT_TOPICS_NUMBER }}
