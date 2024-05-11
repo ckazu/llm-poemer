@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from atproto import Client as AtprotoClient
+from atproto import client_utils
 
 # ai engine support
 import cohere
@@ -168,7 +169,19 @@ class Application:
             if len(poem) > 140:
                 print("140文字を超えるためスキップ")
             else:
-                text = f"{poem}\n#ポエム #peom"
+                text = (
+                    client_utils.TextBuilder()
+                    .text(theme)
+                    .text("\n---\n")
+                    .text(poem)
+                    # 改行を入れる
+                    .text("\n")
+                    .tag("#poem", "poem")
+                    .text(" ")
+                    .tag("#ポエム", "ポエム")
+                    .text(" ")
+                    .tag("#詩", "詩")
+                )
                 self.bluesky_notifier.send_message(text)
 
     def build_theme_prompt(self, text):
